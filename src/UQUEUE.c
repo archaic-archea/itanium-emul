@@ -55,7 +55,6 @@ uint64_t pop_queue(UQueue *q) {
 }
 
 void push_queue(UQueue *q, uint64_t val) {
-    wqueue:
     uintmax_t fetch_off = q->write_off;
     q->write_off += 1;
 

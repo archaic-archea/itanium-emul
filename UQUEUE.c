@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: © 2024 Lillith Beatrix archaic.archea@gmail.com
-// SPDX-License-Identifier: CDDL-1.1
+// SPDX-License-Identifier: MIT
 
 // This file contains a dispatch queue implementation for the Itanium-Emul emulator.
 

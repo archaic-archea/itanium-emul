@@ -47,7 +47,7 @@ uint64_t pop_queue(UQueue *q) {
     // Grab the current entry we're on, and reset it to 0 so no one else uses it
     uint64_t entry = 0;
     entry = atomic_exchange_explicit(q->base + offset, entry, memory_order_acq_rel);
-    if ((entry & 0) == 1)
+    if (!(entry & 1))
         // This entry is invalid, try again to get a valid entry
         goto rqueue;
     

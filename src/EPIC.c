@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <UQUEUE.h>
 #include <MEM.h>
+#include <stdlib.h>
 
 typedef enum {
   M_UNIT,
@@ -100,7 +101,26 @@ void debug_print_template(template t) {
   }
 } 
 
-int main() {
+int main(int argc, char *argv[]) {
+  uintmax_t bin_len = 16;
+  uint8_t *bin = NULL;
+  
+  if (argc < 2) {
+    printf("No file path provided\n");
+    return 4;
+  }
+
+  FILE *binf = fopen(argv[1], "r");
+  fseek(binf, 0, SEEK_END);
+  bin_len = ftell(binf);
+  bin = (uint8_t *)malloc(bin_len * sizeof(uint8_t));
+  if (bin == NULL) {
+    printf("Failed to allocate buffer for input file '%s'\n", argv[1]);
+    return 3;
+  }
+  fread(bin, 1, bin_len, binf);
+  fclose(binf);
+
   if (init_ram(8, 4096) != 0)
     return 1;
 
@@ -108,16 +128,16 @@ int main() {
   if (init_queue(&mq, 8))
     return 2;
 
-  uint64_t low = 0x0080000100000011;
-  uint64_t high = 0x0084000880420000;   
-  (void)template_field_table;
-  bundle example = ((__uint128_t)(high) << 64) | low; 
-  template tmplt = ia64_get_template_field(example);
-  debug_print_template(tmplt);
+  for (int i = 0; i < bin_len; i += 16) {
+    printf("Reading instruction %i\n", i >> 4);
+    bundle example = *(__uint128_t *)(bin + i);
+    template tmplt = ia64_get_template_field(example);
+    debug_print_template(tmplt);
 
-  for (int i = 0; i < 3; i++) 
-    if (tmplt.slots[i].index == M_UNIT)
-      push_queue(&mq, (example >> 5) >> (41 * i));
+    for (int i = 0; i < 3; i++) 
+      if (tmplt.slots[i].index == M_UNIT)
+        push_queue(&mq, (example >> 5) >> (41 * i));
+  }
 
   memory_unit(&mq);
 }

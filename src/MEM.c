@@ -7,13 +7,10 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <UQUEUE.h>
+#include <MEM.h>
 
 #include <stdio.h>
-
-typedef struct __RAM_SLOT_T {
-    atomic_uint_fast8_t lock;
-    uint8_t *base;
-} RamSlot;
 
 static RamSlot *SLOT_ENTRIES = NULL;
 static uintmax_t SLOT_SIZE = 0;
@@ -70,7 +67,7 @@ void free_slot(RamSlot *entry) {
 // Convert a physical address to an actual memory address on the host machine
 // This assumes you always have the correct slot to request the address from
 // If the slot is not correct then it may return an invalid pointer
-uint8_t *get_addr(RamSlot *slot, uint64_t paddr) {
+void *get_addr(RamSlot *slot, uint64_t paddr) {
     uint64_t mask = -1;
     // Clear the top bits to create a mask for the paddr
     mask = mask << PADDR_SHIFT;
@@ -84,4 +81,13 @@ uint8_t *get_addr(RamSlot *slot, uint64_t paddr) {
         return NULL;
     
     return (void *)(slot->base + paddr);
+}
+
+void memory_unit(UQueue *q) {
+    while (1) {
+        // pop_queue should never return an invalid entry
+        // Shift it down by 64 minus the size of each individual instruction in itanium
+        uint64_t instr = pop_queue(q) >> (64 - 41);
+        printf("Got instruction %lx\n", instr);
+    }
 }

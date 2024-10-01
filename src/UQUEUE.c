@@ -6,17 +6,7 @@
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-// This *should* be lockless, and performant
-// Sadly untested though, actual performance TBD
-typedef struct __UQUEUE_T {
-    uint64_t *base;
-    uintmax_t entries;
-    // Doesn't need to be atomic due to only one producer
-    uintmax_t write_off;
-    // Must be atomic due to multiple potential consumers
-    atomic_uintmax_t read_off;
-} UQueue;
+#include <UQUEUE.h>
 
 // Initialize queue with a new base and size, might error
 uint8_t init_queue(UQueue *q, uintmax_t entries) {

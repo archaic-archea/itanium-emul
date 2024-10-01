@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <UQUEUE.h>
+#include <MEM.h>
 
 typedef enum {
   M_UNIT,
@@ -99,9 +101,23 @@ void debug_print_template(template t) {
 } 
 
 int main() {
+  if (init_ram(8, 4096) != 0)
+    return 1;
+
+  UQueue mq;
+  if (init_queue(&mq, 8))
+    return 2;
+
   uint64_t low = 0x0080000100000011;
   uint64_t high = 0x0084000880420000;   
   (void)template_field_table;
   bundle example = ((__uint128_t)(high) << 64) | low; 
-  debug_print_template(ia64_get_template_field(example));   
+  template tmplt = ia64_get_template_field(example);
+  debug_print_template(tmplt);
+
+  for (int i = 0; i < 3; i++) 
+    if (tmplt.slots[i].index == M_UNIT)
+      push_queue(&mq, (example >> 5) >> (41 * i));
+
+  memory_unit(&mq);
 }

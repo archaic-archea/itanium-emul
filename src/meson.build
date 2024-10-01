@@ -1,1 +1,1 @@
-src += files('EPIC.c', 'UQUEUE.c')
+src += files('EPIC.c', 'UQUEUE.c', 'MEM.c')

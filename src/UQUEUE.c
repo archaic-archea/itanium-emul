@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: © 2024 Lillith Beatrix archaic.archea@gmail.com
-// SPDX-License-Identifier: CDDL-1.1
+// SPDX-License-Identifier: MIT
 
 // This file contains a dispatch queue implementation for the Itanium-Emul emulator.
 
@@ -47,7 +47,7 @@ uint64_t pop_queue(UQueue *q) {
     // Grab the current entry we're on, and reset it to 0 so no one else uses it
     uint64_t entry = 0;
     entry = atomic_exchange_explicit(q->base + offset, entry, memory_order_acq_rel);
-    if ((entry & 0) == 1)
+    if (!(entry & 1))
         // This entry is invalid, try again to get a valid entry
         goto rqueue;
     
@@ -55,7 +55,6 @@ uint64_t pop_queue(UQueue *q) {
 }
 
 void push_queue(UQueue *q, uint64_t val) {
-    wqueue:
     uintmax_t fetch_off = q->write_off;
     q->write_off += 1;
 

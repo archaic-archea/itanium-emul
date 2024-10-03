@@ -8,6 +8,8 @@
 #include <stdatomic.h>
 #include <string.h>
 
+volatile uint8_t RUNNING = 1;
+
 typedef enum {
   M_UNIT,
   I_UNIT,

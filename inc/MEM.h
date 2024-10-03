@@ -15,4 +15,4 @@ uint8_t lock_slot(RamSlot *entry);
 void free_slot(RamSlot *entry);
 
 void *get_addr(RamSlot *slot, uint64_t paddr);
-void memory_unit(UQueue *q);
+int memory_unit(void *qp);

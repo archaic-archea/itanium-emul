@@ -3,6 +3,10 @@
 #include <UQUEUE.h>
 #include <MEM.h>
 #include <stdlib.h>
+#include <threads.h>
+#include <EPIC.h>
+#include <stdatomic.h>
+#include <string.h>
 
 typedef enum {
   M_UNIT,
@@ -69,7 +73,7 @@ typedef struct {
 typedef __uint128_t bundle;
 
 template ia64_get_template_field(bundle b) {
-  printf("template bits: %li\n", (uint64_t  )(b & 0b11111));
+  //printf("template bits: %li\n", (uint64_t  )(b & 0b11111));
   return template_field_table[b & 0b11111];
 }
 
@@ -102,8 +106,8 @@ void debug_print_template(template t) {
 } 
 
 int main(int argc, char *argv[]) {
-  uintmax_t bin_len = 16;
-  uint8_t *bin = NULL;
+  uintmax_t bin_len = 0;
+  uint64_t *bin = NULL;
   
   if (argc < 2) {
     printf("No file path provided\n");
@@ -111,14 +115,31 @@ int main(int argc, char *argv[]) {
   }
 
   FILE *binf = fopen(argv[1], "r");
+  if (binf == NULL) {
+    printf("Failed to open file '%s'\n", argv[1]);
+    return 7;
+  }
   fseek(binf, 0, SEEK_END);
-  bin_len = ftell(binf);
-  bin = (uint8_t *)malloc(bin_len * sizeof(uint8_t));
+  bin_len = ftell(binf) >> 3;
+  if (ftell(binf) & 0b1111) {
+    printf("File is not multiple of 16\n");
+    return 9;
+  }
+  // Reset to 0 for when we read the file
+  fseek(binf, 0, SEEK_SET);
+
+  bin = (uint64_t *)malloc(bin_len * sizeof(uint64_t));
+  memset(bin, 0, bin_len * sizeof(uint64_t));
   if (bin == NULL) {
     printf("Failed to allocate buffer for input file '%s'\n", argv[1]);
     return 3;
   }
-  fread(bin, 1, bin_len, binf);
+
+  fread(bin, sizeof(uint64_t), bin_len, binf);
+  if (ferror(binf)) {
+    printf("Failed to read '%s'\n", argv[1]);
+    return 8;
+  }
   fclose(binf);
 
   if (init_ram(8, 4096) != 0)
@@ -128,16 +149,32 @@ int main(int argc, char *argv[]) {
   if (init_queue(&mq, 8))
     return 2;
 
-  for (int i = 0; i < bin_len; i += 16) {
-    printf("Reading instruction %i\n", i >> 4);
-    bundle example = *(__uint128_t *)(bin + i);
-    template tmplt = ia64_get_template_field(example);
-    debug_print_template(tmplt);
-
-    for (int i = 0; i < 3; i++) 
-      if (tmplt.slots[i].index == M_UNIT)
-        push_queue(&mq, (example >> 5) >> (41 * i));
+  thrd_t munit_thread;
+  if (thrd_create(&munit_thread, memory_unit, &mq) != thrd_success) {
+    printf("Failed to create memory thread\n");
+    return 5;
   }
 
-  memory_unit(&mq);
+  for (int i = 0; i < (bin_len >> 1); i += 1) {
+    int idx = i << 1;
+    __uint128_t val = (__uint128_t)*(bin + idx) + ((__uint128_t)*(bin + idx + 1) << 64);
+    bundle example = val;
+    template tmplt = ia64_get_template_field(example);
+
+    for (int x = 0; x < 3; x++) 
+      if (tmplt.slots[x].index == M_UNIT) {
+        push_queue(&mq, ((val >> 5) >> (41 * x)) << 23);
+      }
+  }
+
+  uintmax_t entry_cnt;
+  do {
+    entry_cnt = entries(&mq);
+  } while (entry_cnt > 0);
+  atomic_store(&RUNNING, 0);
+
+  if (thrd_join(munit_thread, NULL) == thrd_error)
+    return 6;
+
+  return 0;
 }

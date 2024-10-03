@@ -10,25 +10,6 @@
 
 volatile uint8_t RUNNING = 1;
 
-typedef enum {
-  M_UNIT,
-  I_UNIT,
-  L_UNIT,
-  X_UNIT,
-  F_UNIT,
-  B_UNIT
-} units;
-
-typedef struct {
-  units index;
-  uint8_t stop_bit:1;
-} order;
-
-typedef struct {
-  order slots[3];
-  uint8_t valid:1;
-} template;
-
 static const template template_field_table[0x20] = {{.valid = 1, .slots = { {.index = M_UNIT, .stop_bit = 0}, {.index = I_UNIT, .stop_bit = 0}, {.index = I_UNIT, .stop_bit = 0} } },
                                                     {.valid = 1, .slots = { {.index = M_UNIT, .stop_bit = 0}, {.index = I_UNIT, .stop_bit = 0}, {.index = I_UNIT, .stop_bit = 1} } },
                                                     {.valid = 1, .slots = { {.index = M_UNIT, .stop_bit = 0}, {.index = I_UNIT, .stop_bit = 1}, {.index = I_UNIT, .stop_bit = 0} } },
@@ -61,18 +42,6 @@ static const template template_field_table[0x20] = {{.valid = 1, .slots = { {.in
                                                     {.valid = 1, .slots = { {.index = M_UNIT, .stop_bit = 0}, {.index = F_UNIT, .stop_bit = 0}, {.index = B_UNIT, .stop_bit = 1} } },
                                                     {.valid = 0},
                                                     {.valid = 0}};
-
-typedef struct {
-  uint64_t value;
-  uint8_t NaT:1;
-} ia64_gpr;
-
-
-typedef struct {
-  ia64_gpr registers[128];
-} registers;
-
-typedef __uint128_t bundle;
 
 template ia64_get_template_field(bundle b) {
   //printf("template bits: %li\n", (uint64_t  )(b & 0b11111));

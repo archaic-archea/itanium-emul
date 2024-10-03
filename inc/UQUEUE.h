@@ -13,8 +13,11 @@ typedef struct __UQUEUE_T {
     uintmax_t write_off;
     // Must be atomic due to multiple potential consumers
     atomic_uintmax_t read_off;
+    // Current amount of entries that are valid
+    atomic_uintmax_t cur_entries;
 } UQueue;
 
 uint8_t init_queue(UQueue *q, uintmax_t entries);
 uint64_t pop_queue(UQueue *q);
 void push_queue(UQueue *q, uint64_t val);
+uintmax_t entries(UQueue *q);

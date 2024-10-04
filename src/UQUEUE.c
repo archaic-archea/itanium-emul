@@ -39,8 +39,7 @@ uint64_t pop_queue(UQueue *q) {
 }
 
 void push_queue(UQueue *q, uint64_t val) {
-    uintmax_t fetch_off = q->write_off % q->entries;
-    q->write_off += 1;
+    uintmax_t fetch_off = atomic_fetch_add_explicit(&q->write_off, 1, memory_order_release) % q->entries;
     atomic_fetch_add_explicit(&q->cur_entries, 1, memory_order_release);
 
     // Bit 0 (0x1) is the valid bit, we must set it in the new entry

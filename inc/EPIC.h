@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <UQUEUE.h>
 
 extern volatile uint8_t RUNNING;
 
@@ -33,3 +34,15 @@ typedef struct {
   order slots[3];
   uint8_t valid:1;
 } template;
+
+typedef struct __Cpu_State {
+    UQueue munit_dispatch;
+    UQueue iunit_dispatch;
+    UQueue funit_dispatch;
+    UQueue bunit_dispatch;
+    registers int_rf;
+} CpuState;
+
+template ia64_get_template_field(bundle b);
+const char* debug_get_slot_name(units unit);
+void debug_print_template(template t);
